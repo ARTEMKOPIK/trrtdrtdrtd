@@ -1,0 +1,35 @@
+workflows:
+  ios-unsigned-build:
+    name: iOS unsigned build
+    environment:
+      xcode: 16.4
+      vars:
+        XCODE_PROJECT: "DurakAI.xcodeproj"
+        XCODE_SCHEME: "DurakAI"
+    scripts:
+      - name: Build .xcarchive (no signing)
+        script: |
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath $CM_BUILD_DIR/DurakAI.xcarchive \
+            archive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+
+      - name: Package .ipa manually
+        script: |
+          APP_PATH=$(find "$CM_BUILD_DIR/DurakAI.xcarchive/Products/Applications" -name "*.app" | head -n 1)
+
+          mkdir -p $CM_BUILD_DIR/Payload
+          cp -R "$APP_PATH" $CM_BUILD_DIR/Payload/
+
+          cd $CM_BUILD_DIR
+          zip -r DurakAI.ipa Payload
+
+          rm -rf Payload
+
+          echo "✅ IPA создан: $CM_BUILD_DIR/DurakAI.ipa"
+
+    artifacts:
+      - $CM_BUILD_DIR/DurakAI.ipa
